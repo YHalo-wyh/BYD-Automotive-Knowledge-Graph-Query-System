@@ -1,0 +1,329 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BYD 汽车信息查询系统</title>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- ECharts 图表库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="top-nav">
+        <div class="nav-brand">
+            <i class="fas fa-car"></i>
+            <span>BYD 汽车信息查询系统</span>
+        </div>
+        <div class="nav-search">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" id="global-search" placeholder="搜索车型、系列、技术..." autocomplete="off">
+                <button class="search-btn" onclick="handleSearch()">
+                    <i class="fas fa-search"></i> 搜索
+                </button>
+            </div>
+        </div>
+        <div class="nav-stats">
+            <span class="stat-badge"><i class="fas fa-layer-group"></i> <span id="stat-series">0</span> 系列</span>
+            <span class="stat-badge"><i class="fas fa-car-side"></i> <span id="stat-models">0</span> 车型</span>
+            <span class="stat-badge"><i class="fas fa-microchip"></i> <span id="stat-techs">0</span> 技术</span>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- 左侧筛选面板 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-section">
+                <h3><i class="fas fa-layer-group"></i> 产品系列</h3>
+                <div class="series-list" id="series-list">
+                    <label class="series-item active" data-series-id="0">
+                        <input type="radio" name="series" value="0" checked>
+                        <span class="series-name">全部系列</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3><i class="fas fa-bolt"></i> 能源类型</h3>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-energy="">全部</button>
+                    <button class="filter-btn" data-energy="EV">纯电动 EV</button>
+                    <button class="filter-btn" data-energy="PHEV">插混 PHEV</button>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3><i class="fas fa-microchip"></i> 核心技术</h3>
+                <div class="tech-list" id="tech-list">
+                    <!-- 技术列表动态加载 -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="content-area">
+            <!-- 标签页导航 -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="models">
+                    <i class="fas fa-car-side"></i> 车型列表
+                </button>
+                <button class="tab-btn" data-tab="techs">
+                    <i class="fas fa-microchip"></i> 技术一览
+                </button>
+                <!-- 添加按钮 -->
+                <div class="tab-actions">
+                    <button class="add-btn" onclick="showAddModal('model')" title="添加新车型">
+                        <i class="fas fa-plus"></i> 添加车型
+                    </button>
+                    <button class="add-btn secondary" onclick="showAddModal('tech')" title="添加新技术">
+                        <i class="fas fa-plus"></i> 添加技术
+                    </button>
+                </div>
+            </div>
+
+            <!-- 车型列表面板 -->
+            <div class="tab-panel active" id="panel-models">
+                <div class="panel-header">
+                    <h2>车型列表</h2>
+                    <span class="result-count" id="model-count">共 0 款车型</span>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="models-table">
+                        <thead>
+                            <tr>
+                                <th>车型名称</th>
+                                <th>所属系列</th>
+                                <th>指导价(万)</th>
+                                <th>续航(km)</th>
+                                <th>能源类型</th>
+                                <th>车身类型</th>
+                                <th>座位数</th>
+                                <th>上市年份</th>
+                                <th>搭载技术</th>
+                            </tr>
+                        </thead>
+                        <tbody id="models-tbody">
+                            <!-- 数据动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 技术列表面板 -->
+            <div class="tab-panel" id="panel-techs">
+                <div class="panel-header">
+                    <h2>核心技术一览</h2>
+                </div>
+                <div class="tech-cards" id="tech-cards">
+                    <!-- 技术卡片动态加载 -->
+                </div>
+            </div>
+
+            <!-- 加载指示器 -->
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="loading-spinner">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>加载中...</span>
+                </div>
+            </div>
+
+            <!-- 提示消息 -->
+            <div id="toast" class="toast"></div>
+        </main>
+
+        <!-- 关系图可视化窗口 -->
+        <div class="graph-window" id="graph-window">
+            <div class="graph-header">
+                <h3><i class="fas fa-project-diagram"></i> 关系图谱</h3>
+                <div class="graph-controls">
+                    <button class="graph-btn" id="graph-toggle" title="收起/展开">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button class="graph-btn" id="graph-fullscreen" title="全屏">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- 视图模式切换 -->
+            <div class="graph-view-tabs" id="graph-view-tabs">
+                <button class="view-tab active" data-view="all" title="显示完整关系图">
+                    <i class="fas fa-globe"></i> 全局视图
+                </button>
+                <button class="view-tab" data-view="table" title="显示选中项的表关联">
+                    <i class="fas fa-table"></i> 表关联
+                </button>
+                <button class="view-tab" data-view="tree" title="显示选中项的树状图">
+                    <i class="fas fa-sitemap"></i> 树状图
+                </button>
+            </div>
+            <!-- 当前选中项提示 -->
+            <div class="graph-selected-item" id="graph-selected-item" style="display:none;">
+                <span class="selected-label">当前选中：</span>
+                <span class="selected-name" id="selected-item-name"></span>
+                <button class="clear-selection-btn" onclick="clearGraphSelection()" title="清除选择">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="graph-legend">
+                <span class="legend-item"><i class="fas fa-circle" style="color: #1890ff;"></i> 系列</span>
+                <span class="legend-item"><i class="fas fa-circle" style="color: #52c41a;"></i> 车型</span>
+                <span class="legend-item"><i class="fas fa-circle" style="color: #fa8c16;"></i> 技术</span>
+            </div>
+            <div class="graph-container" id="graph-container"></div>
+        </div>
+
+        <!-- 右侧详情面板 -->
+        <aside class="detail-panel" id="detail-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-info-circle"></i> 车型详情</h3>
+                <button class="close-btn" onclick="closeDetailPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="panel-content" id="panel-content">
+                <div class="empty-state">
+                    <i class="fas fa-mouse-pointer"></i>
+                    <p>点击表格中的车型查看详细信息</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 车型详情模板 -->
+    <template id="model-detail-template">
+        <div class="model-detail">
+            <div class="detail-header">
+                <h2 class="model-name"></h2>
+                <span class="model-series"></span>
+            </div>
+
+            <div class="detail-section">
+                <h4><i class="fas fa-tag"></i> 基本信息</h4>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">指导价</span>
+                        <span class="info-value price"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">续航里程</span>
+                        <span class="info-value range"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">能源类型</span>
+                        <span class="info-value energy"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">车身类型</span>
+                        <span class="info-value body"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">座位数</span>
+                        <span class="info-value seats"></span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">上市年份</span>
+                        <span class="info-value year"></span>
+                    </div>
+                </div>
+            </div>
+            
+
+            <div class="detail-section">
+                <h4><i class="fas fa-microchip"></i> 搭载技术</h4>
+                <div class="tech-tags"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- 添加元素模态框 -->
+    <div class="modal-overlay" id="add-modal" onclick="closeAddModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title"><i class="fas fa-plus-circle"></i> 添加车型</h3>
+                <button class="modal-close" onclick="closeAddModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <!-- 添加车型表单 -->
+                <form id="add-model-form" class="add-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>车型名称 <span class="required">*</span></label>
+                            <input type="text" name="model_name" required placeholder="如：海鸥">
+                        </div>
+                        <div class="form-group">
+                            <label>所属系列 <span class="required">*</span></label>
+                            <select name="series_id" required id="series-select">
+                                <!-- 动态加载 -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>指导价(万) <span class="required">*</span></label>
+                            <input type="number" name="price" step="0.01" required placeholder="如：7.38">
+                        </div>
+                        <div class="form-group">
+                            <label>续航里程(km)</label>
+                            <input type="number" name="range_km" placeholder="如：305">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>能源类型 <span class="required">*</span></label>
+                            <select name="energy_type" required>
+                                <option value="EV">纯电动 (EV)</option>
+                                <option value="PHEV">插电混动 (PHEV)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>车身类型</label>
+                            <input type="text" name="body_type" placeholder="如：两厢车">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>座位数</label>
+                            <input type="number" name="seats" value="5" min="2" max="9">
+                        </div>
+                        <div class="form-group">
+                            <label>上市年份</label>
+                            <input type="text" name="launch_year" placeholder="如：2023">
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>搭载技术</label>
+                        <div class="tech-checkboxes" id="tech-checkboxes">
+                            <!-- 动态加载 -->
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- 添加技术表单 -->
+                <form id="add-tech-form" class="add-form" style="display:none;">
+                    <div class="form-group">
+                        <label>技术名称 <span class="required">*</span></label>
+                        <input type="text" name="tech_name" required placeholder="如：刀片电池">
+                    </div>
+                    <div class="form-group">
+                        <label>技术介绍</label>
+                        <textarea name="intro" rows="3" placeholder="请输入技术介绍..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeAddModal()">取消</button>
+                <button class="btn-submit" onclick="submitAdd()"><i class="fas fa-check"></i> 确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
