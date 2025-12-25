@@ -95,6 +95,10 @@ g++ -std=c++17 -O2 -o byd_cli src/byd_cli.cpp
 | 关系图谱 | 可视化展示系列-车型-技术关联关系 |
 | 数据管理 | 支持添加新车型和技术 |
 
+
+###web版本预览
+<img width="2550" height="1327" alt="image" src="https://github.com/user-attachments/assets/c6776e33-623f-4300-9340-4203b84d5be7" />
+
 ### CLI 版功能
 
 ```
@@ -109,6 +113,8 @@ g++ -std=c++17 -O2 -o byd_cli src/byd_cli.cpp
 9. 查看统计信息
 0. 退出
 ```
+###CLI版本预览
+<img width="1366" height="804" alt="image" src="https://github.com/user-attachments/assets/af44de06-7d45-434e-8ee0-52b167ad39b1" />
 
 ## 📊 API 接口
 
